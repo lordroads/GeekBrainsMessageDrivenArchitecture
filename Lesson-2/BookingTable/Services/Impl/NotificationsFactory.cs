@@ -8,8 +8,8 @@ public class NotificationFactory : INotificationFactory
     {
         return type switch
         {
-            NotificationType vehicule when vehicule == NotificationType.CALL => new CallNotification(),
-            NotificationType vehicule when vehicule == NotificationType.SMS => new SmsNotification(),
+            NotificationType vehicule when vehicule == NotificationType.CALL => CallNotification.GetInstance(),
+            NotificationType vehicule when vehicule == NotificationType.SMS => SmsNotification.GetInstance(),
             _ => throw new IndexOutOfRangeException($"Cannot create this type {type}"),
         };
     }
