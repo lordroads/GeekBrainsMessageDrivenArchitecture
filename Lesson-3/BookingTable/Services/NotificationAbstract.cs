@@ -1,14 +1,17 @@
+using Messaging.Interfaces.Impl;
+
 namespace BookingTable.Services;
 
 public abstract class NotificationAbstract
 {
     private protected NotificationAbstract() {  }
 
-    public void SendAsync(string message)
+    public async Task SendAsync(TableBooked message, CancellationToken cancellationToken)
     {
-        Thread newThread = new Thread(() => Send(message));
-        newThread.Name = "Send_Notification_Message";
-        newThread.Start();
+        Task<Task> task = new Task<Task>(() => Send(message, cancellationToken));
+        task.Start();
+
+        await task.Result;
     }
-    protected abstract void Send(string message);
+    protected abstract Task Send(TableBooked message, CancellationToken cancellationToken);
 }

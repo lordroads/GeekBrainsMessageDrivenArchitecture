@@ -1,4 +1,4 @@
-using BookingTable.Enums;
+using Restaurant.Booking.Enums;
 
 namespace BookingTable;
 

@@ -1,27 +1,21 @@
-using Messaging.Interfaces;
-using Messaging.Interfaces.Impl.RabbitMQ;
+using MassTransit;
+using Messaging.Interfaces.Impl;
 
 namespace BookingTable.Services.Impl;
 
 public class SmsNotification : NotificationAbstract
 {
-    private static readonly Lazy<SmsNotification> _instance =
-        new Lazy<SmsNotification>(() => new SmsNotification());
+    private readonly IBus _bus;
 
-    private readonly ISendMessageMQ<string> _produser;
-
-    private SmsNotification()
+    public SmsNotification(IBus bus)
     {
-        _produser = new RabbitMQProduser("BookingNotification", "localhost");
+        _bus = bus;
     }
 
-    public static SmsNotification GetInstance()
+    protected override async Task Send(TableBooked message, CancellationToken cancellationToken)
     {
-        return _instance.Value;
-    }
-
-    protected override void Send(string message)
-    {
-        _produser.SendMessage($"[SMS]: {message}");
+        await _bus.Publish(message,
+            context => context.Durable = false,
+            cancellationToken);
     }
 }
