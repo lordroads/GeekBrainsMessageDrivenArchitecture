@@ -2,6 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Restaurant.Notification.Consumers;
+using Restaurant.Notification.Services;
+using Restaurant.Notification.Services.Impl;
 
 namespace Restaurant.Notification;
 
@@ -14,8 +16,8 @@ internal class Program
                 {
                     services.AddMassTransit(x =>
                     {
-                        x.AddConsumer<KitchenReadyConsumer>();
-                        x.AddConsumer<NotifierTableBookedConsumer>();
+                        x.AddConsumer<NotifierConsumer>()
+                            .Endpoint(c => c.Temporary = true);
 
                         x.UsingRabbitMq((context, cfg) =>
                         {
@@ -34,7 +36,7 @@ internal class Program
                         opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(1));
 
 
-                    services.AddSingleton<Notifier>();
+                    services.AddTransient<INotificationService, NotificationService>();
                 })
                 .Build()
                 .Run();

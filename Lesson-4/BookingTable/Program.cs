@@ -1,8 +1,10 @@
-﻿using BookingTable.Services;
-using BookingTable.Services.Impl;
-using MassTransit;
+﻿using MassTransit;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Restaurant.Booking.Consumers;
+using Restaurant.Booking.Saga;
+using Restaurant.Booking.Services;
+using Restaurant.Booking.Services.Impl;
 
 namespace Restaurant.Booking
 {
@@ -15,8 +17,24 @@ namespace Restaurant.Booking
                 {
                     services.AddMassTransit(x =>
                     {
+                        x.AddConsumer<BookingConsumer>()
+                            .Endpoint(e => e.Temporary = true);
+
+                        x.AddConsumer<BookingKitchenFaultConsumer>()
+                            .Endpoint(e => e.Temporary = true);
+
+                        x.AddConsumer<BookingCancellationConsumer>()
+                            .Endpoint(e => e.Temporary = true);
+
+                        x.AddSagaStateMachine<RestaurantBookingSaga, RestaurantBooking>()
+                            .InMemoryRepository();
+
+                        x.AddDelayedMessageScheduler();
+
                         x.UsingRabbitMq((context, cfg) =>
                         {
+                            cfg.UseDelayedMessageScheduler();
+                            cfg.UseInMemoryOutbox();
                             cfg.ConfigureEndpoints(context);
                         });
                     });
@@ -31,11 +49,11 @@ namespace Restaurant.Booking
                     services.Configure<HostOptions>(
                         opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(1));
 
+                    services.AddTransient<IBookingService, BookingService>();
+                    services.AddTransient<IHostasService, HostasService>();
+                    services.AddSingleton<IRepositoryTable, RepositoryTable>();
 
-                    services.AddTransient<Restaurant>();
-                    services.AddTransient<INotificationFactory, NotificationFactory>();
-
-                    services.AddHostedService<Worker>();
+                    services.AddHostedService<ClientWorker>();
                 })
                 .Build()
                 .Run();

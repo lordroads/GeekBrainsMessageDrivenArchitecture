@@ -2,6 +2,7 @@
 
 public interface IKitchenReady
 {
+    public Guid ClientId { get; }
     public Guid OrderId { get; }
-    public bool Ready { get; }
+    public bool Seccesed { get; }
 }

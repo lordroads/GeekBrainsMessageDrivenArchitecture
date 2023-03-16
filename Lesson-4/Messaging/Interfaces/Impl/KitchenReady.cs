@@ -2,13 +2,15 @@
 
 public class KitchenReady : IKitchenReady
 {
+    public Guid ClientId { get; }
     public Guid OrderId { get; }
-    public bool Ready { get; }
+    public bool Seccesed { get; }
 
 
-    public KitchenReady(Guid orderId, bool ready)
+    public KitchenReady(Guid clientId, Guid orderId, bool seccesed)
     {
+        ClientId = clientId;
         OrderId = orderId;
-        Ready = ready;
+        Seccesed = seccesed;
     }
 }

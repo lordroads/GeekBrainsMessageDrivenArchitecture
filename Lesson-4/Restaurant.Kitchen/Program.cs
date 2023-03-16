@@ -2,6 +2,8 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Restaurant.Kitchen.Consumers;
+using Restaurant.Kitchen.Services;
+using Restaurant.Kitchen.Services.Impl;
 
 namespace Restaurant.Kitchen;
 
@@ -14,7 +16,8 @@ internal class Program
                 {
                     services.AddMassTransit(x =>
                     {
-                        x.AddConsumer<KitchenTableBookedConsumer>();
+                        x.AddConsumer<KitchenConsumer>()
+                            .Endpoint(e => e.Temporary = true);
 
                         x.UsingRabbitMq((context, cfg) =>
                         {
@@ -33,7 +36,7 @@ internal class Program
                         opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(1));
 
 
-                    services.AddTransient<Manager>();
+                    services.AddTransient<IKitchenService, KitchenService>();
                 })
                 .Build()
                 .Run();

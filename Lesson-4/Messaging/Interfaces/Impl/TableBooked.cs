@@ -2,25 +2,20 @@
 
 namespace Messaging.Interfaces.Impl;
 
-public class TableBooked : ITableBooked, ITableBookedCall
+public class TableBooked : ITableBooked
 {
     public Guid OrderId { get; }
     public Guid ClientId { get; }
-    public Dish? PreOrder { get; }
+    public int CountOfPersons { get; }
     public bool Success { get; }
-    public string? Message { get; }
+    public Dish? PreOrder { get; }
 
-    public TableBooked(
-        Guid orderId,
-        Guid clientId,
-        bool success,
-        Dish? preOrder = null,
-        string message = null)
+    public TableBooked(Guid orderId, Guid clientId, int countOfPersons, bool success, Dish? preOrder)
     {
-        ClientId = clientId;
-        PreOrder = preOrder;
-        Success = success;
-        Message = message;
         OrderId = orderId;
+        ClientId = clientId;
+        CountOfPersons = countOfPersons;
+        Success = success;
+        PreOrder = preOrder;
     }
 }
