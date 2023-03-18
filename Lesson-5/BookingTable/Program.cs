@@ -1,4 +1,5 @@
 ﻿using MassTransit;
+using Messaging.Exceptions;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Restaurant.Booking.Consumers;
@@ -27,6 +28,7 @@ namespace Restaurant.Booking
                             .Endpoint(e => e.Temporary = true);
 
                         x.AddSagaStateMachine<RestaurantBookingSaga, RestaurantBooking>()
+                            .Endpoint(e => e.Temporary = true)
                             .InMemoryRepository();
 
                         x.AddDelayedMessageScheduler();
@@ -36,6 +38,18 @@ namespace Restaurant.Booking
                             cfg.UseDelayedMessageScheduler();
                             cfg.UseInMemoryOutbox();
                             cfg.ConfigureEndpoints(context);
+
+                            cfg.UseMessageRetry(cfg =>
+                            {
+                                cfg.Incremental(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
+
+                                cfg.Ignore<LasagnaException>();
+                            });
+
+                            cfg.UseScheduledRedelivery(cfg =>
+                            {
+                                cfg.Intervals(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(6));
+                            });
                         });
                     });
 

@@ -1,4 +1,5 @@
 using MassTransit;
+using Messaging.Exceptions;
 using Messaging.Interfaces;
 using Messaging.Interfaces.Impl;
 using Restaurant.Kitchen.Services;
@@ -18,9 +19,11 @@ namespace Restaurant.Kitchen.Consumers
 
         public Task Consume(ConsumeContext<ITableBooked> context)
         {
-            var result = _kitchenService.CheckMenu(context.Message.PreOrder, context.Message.CountOfPersons);
+            if (context.Message.PreOrder is null) { throw new LasagnaException("Ошибка лазаньи!"); }
 
-            Console.WriteLine($"Dish {context.Message.PreOrder?.Name ?? ("None")} - {context.Message.OrderId} [STATUS KITCHEN]: {result}");
+            var result = _kitchenService.CheckMenu(context.Message.PreOrder, context.Message.CountOfPersons, context.Message.OrderId);
+
+            Console.WriteLine($"Dish {context.Message.PreOrder?.Name ?? ("Лазанья")} - {context.Message.OrderId} [STATUS KITCHEN]: {result}");
 
             if (result)
             {

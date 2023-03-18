@@ -7,6 +7,9 @@ public class KitchenService : IKitchenService
     private Dictionary<Dish, int> _stopList = 
         new Dictionary<Dish, int>();
 
+    private Dictionary<Dish, OrderDish> _preOrders =
+        new Dictionary<Dish, OrderDish>();
+
     public KitchenService()
     {
         var _dishes = new List<Dish> 
@@ -35,7 +38,7 @@ public class KitchenService : IKitchenService
     }
 
 
-    public bool CheckMenu(Dish? dish, int countOfPersons)
+    public bool CheckMenu(Dish? dish, int countOfPersons, Guid clientId)
     {
         if (dish is null)
         {
@@ -46,9 +49,31 @@ public class KitchenService : IKitchenService
         {
             _stopList[dish] = _stopList[dish] - countOfPersons;
 
+            var preOrder = new OrderDish(clientId, countOfPersons);
+
+            _preOrders.Add(dish, preOrder);
+
             return true;
         }
 
         return false;
+    }
+
+    public void OrderCancallation(Guid clientId)
+    {
+        var preOrder = _preOrders.FirstOrDefault(order => order.Value.ClientId == clientId);
+
+        if (preOrder.Key is not null)
+        {
+            _preOrders.Remove(preOrder.Key);
+
+            var dish = _stopList.FirstOrDefault(dish => dish.Key == preOrder.Key);
+
+            _stopList.Remove(dish.Key);
+
+            var count = dish.Value + preOrder.Value.CountOfPersons;
+
+            _stopList.Add(dish.Key, count);
+        }
     }
 }

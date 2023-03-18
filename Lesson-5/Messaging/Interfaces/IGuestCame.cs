@@ -1,6 +1,6 @@
 ﻿namespace Messaging.Interfaces;
 
-public interface IBookingExpire
+public interface IGuestCame
 {
     public Guid OrderId { get; }
 }

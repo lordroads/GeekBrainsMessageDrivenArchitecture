@@ -6,6 +6,7 @@ namespace Restaurant.Booking.Saga;
 
 public sealed class RestaurantBookingSaga : MassTransitStateMachine<RestaurantBooking>
 {
+    public State AwaitingGuestComing { get; private set; }
     public State AwaitingBookingApproved { get; private set; }
     public Event<IBookingRequest> BookingRequested { get; private set; }
     public Event<ITableBooked> TableBooked { get; private set; }
@@ -15,6 +16,8 @@ public sealed class RestaurantBookingSaga : MassTransitStateMachine<RestaurantBo
     public Event<Fault<ITableBooked>> BookingKitchenFault { get; private set; }
 
     public Schedule<RestaurantBooking, IBookingExpire> BookingExpired { get; private set; }
+    public Schedule<RestaurantBooking, IGuestCame> GuestCame { get; private set; }
+    public Schedule<RestaurantBooking, IBookingOverdue> BookingOverdue { get; private set; }
     public Event BookingApproved { get; private set; }
 
     public RestaurantBookingSaga()
@@ -47,6 +50,18 @@ public sealed class RestaurantBookingSaga : MassTransitStateMachine<RestaurantBo
                 x.Received = e => e.CorrelateById(context => context.Message.OrderId);
             });
 
+        Schedule(() => GuestCame, x =>
+            x.ExpirationIdGuestCame, x =>
+            {
+                x.Received = e => e.CorrelateById(context => context.Message.OrderId);
+            });
+
+        Schedule(() => BookingOverdue, x =>
+            x.ExpirationIdBookingOverdue, x =>
+            {
+                x.Received = e => e.CorrelateById(context => context.Message.OrderId);
+            });
+
         Initially(
             When(BookingRequested)
             .Then(context =>
@@ -55,7 +70,7 @@ public sealed class RestaurantBookingSaga : MassTransitStateMachine<RestaurantBo
                 context.Instance.OrderId = context.Data.OrderId;
                 context.Instance.ClientId = context.Data.ClientId;
 
-                Console.WriteLine($"[{DateTime.Now}] Saga: {context.Data.CreationDate} - {context.Message.CreationDate}");
+                Console.WriteLine($"[{DateTime.Now}] Saga: {context.Data.OrderId} - {context.Message.CreationDate}");
             })
             .Schedule(BookingExpired,
                 context => new BookingExpire(context.Instance),
@@ -71,7 +86,13 @@ public sealed class RestaurantBookingSaga : MassTransitStateMachine<RestaurantBo
                     context.Instance.OrderId,
                     context.Instance.ClientId,
                     "Стол успешно забронирован."))
-                .Finalize(),
+                .TransitionTo(AwaitingGuestComing)
+                .Schedule(GuestCame, 
+                    context => new GuestCame(context.Instance),
+                    context => context.Saga.ArrivalPeriod)
+                .Schedule(BookingOverdue,
+                    context => new BookingOverdue(context.Instance),
+                    context => TimeSpan.FromSeconds(new Random().Next(7, 15))),
 
             When(BookingRequestFault)
                 .Unschedule(BookingExpired)
@@ -86,11 +107,11 @@ public sealed class RestaurantBookingSaga : MassTransitStateMachine<RestaurantBo
 
             When(BookingKitchenFault)
                 .Unschedule(BookingExpired)
-                .Then(context => Console.WriteLine($"Кухня не дает добро для {context.Message.Message.PreOrder?.Name ?? ("\"Ну что нибудь\"")}!"))
+                .Then(context => Console.WriteLine($"Кухня не дает добро для {context.Message.Message.PreOrder?.Name ?? ("\"Лазаньи\"")}!"))
                 .Publish(context => (INotify)new Notify(
                     context.Instance.OrderId,
                     context.Instance.ClientId,
-                    $"Приносим извинения, но {context.Message.Message.PreOrder?.Name ?? ("\"Ну что нибудь\"")} у нас нет."))
+                    $"Приносим извинения, но {context.Message.Message.PreOrder?.Name ?? ("\"Лазаньи\"")} у нас нет."))
                 //.Publish(context => (IBookingCancellation)
                 //    new BookingCancellation(context.Data.Message.ClientId))
                 .Finalize(),
@@ -102,6 +123,21 @@ public sealed class RestaurantBookingSaga : MassTransitStateMachine<RestaurantBo
                     context.Instance.ClientId))
                 .Finalize()
 
+        );
+
+        During(AwaitingGuestComing,
+            When(GuestCame.Received)
+                .Unschedule(BookingOverdue)
+                .Then(context => Console.WriteLine($"Гость пришел! ({context.Instance.OrderId})"))
+                .Finalize(),
+
+            When(BookingOverdue.Received)
+                .Unschedule(GuestCame)
+                .Then(context => Console.WriteLine($"Упс! Бронь слетела для {context.Instance.OrderId}"))
+                .Publish(context =>
+                (IBookingCancellation)new BookingCancellation(
+                    context.Instance.ClientId))
+                .Finalize()
         );
 
         SetCompletedWhenFinalized();

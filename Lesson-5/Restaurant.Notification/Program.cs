@@ -19,9 +19,23 @@ internal class Program
                         x.AddConsumer<NotifierConsumer>()
                             .Endpoint(c => c.Temporary = true);
 
+                        x.AddDelayedMessageScheduler();
+
                         x.UsingRabbitMq((context, cfg) =>
                         {
+                            cfg.UseDelayedMessageScheduler();
+                            cfg.UseInMemoryOutbox();
                             cfg.ConfigureEndpoints(context);
+
+                            cfg.UseMessageRetry(cfg =>
+                            {
+                                cfg.Incremental(3, TimeSpan.FromSeconds(1), TimeSpan.FromSeconds(2));
+                            });
+
+                            cfg.UseScheduledRedelivery(cfg =>
+                            {
+                                cfg.Intervals(TimeSpan.FromSeconds(2), TimeSpan.FromSeconds(4), TimeSpan.FromSeconds(6));
+                            });
                         });
                     });
 

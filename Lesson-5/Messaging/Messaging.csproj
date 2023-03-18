@@ -10,4 +10,8 @@
     <PackageReference Include="RabbitMQ.Client.Core.DependencyInjection" Version="5.0.0" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Exceptions\" />
+  </ItemGroup>
+
 </Project>
