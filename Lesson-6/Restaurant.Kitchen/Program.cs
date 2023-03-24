@@ -1,4 +1,7 @@
 ﻿using MassTransit;
+using Messaging.Interfaces;
+using Messaging.Interfaces.Impl;
+using Messaging.Models.Requests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Restaurant.Kitchen.Consumers;
@@ -53,6 +56,7 @@ internal class Program
                         opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(1));
 
 
+                    services.AddSingleton<IInMemoryRepository<KitchenRequestModel>, InMemoryRepository<KitchenRequestModel>>(); 
                     services.AddTransient<IKitchenService, KitchenService>();
                 })
                 .Build()

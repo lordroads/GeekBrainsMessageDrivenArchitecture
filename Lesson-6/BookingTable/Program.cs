@@ -1,5 +1,8 @@
 ﻿using MassTransit;
 using Messaging.Exceptions;
+using Messaging.Interfaces;
+using Messaging.Interfaces.Impl;
+using Messaging.Models.Requests;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Restaurant.Booking.Consumers;
@@ -66,6 +69,7 @@ namespace Restaurant.Booking
                     services.AddTransient<IBookingService, BookingService>();
                     services.AddTransient<IHostasService, HostasService>();
                     services.AddSingleton<IRepositoryTable, RepositoryTable>();
+                    services.AddSingleton<IInMemoryRepository<BookingRequestModel>, InMemoryRepository<BookingRequestModel>>(); 
 
                     services.AddHostedService<ClientWorker>();
                 })
