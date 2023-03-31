@@ -1,33 +1,21 @@
-﻿using Prometheus;
 using MassTransit;
 using MassTransit.Audit;
 using Messaging.Exceptions;
 using Messaging.Interfaces;
 using Messaging.Interfaces.Impl;
 using Messaging.Models.Requests;
+using Prometheus;
+using Restaurant.Booking;
 using Restaurant.Booking.Consumers;
 using Restaurant.Booking.Saga;
 using Restaurant.Booking.Services;
 using Restaurant.Booking.Services.Impl;
+using Restaurant.TestWebApi;
 
-using Microsoft.AspNetCore.Builder;
-using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
-using System.Net;
+var builder = WebApplication.CreateBuilder(args);
 
-namespace Restaurant.Booking
-{
-    internal class Program
-    {
-        static void Main(string[] args)
-        {
-            var builder = WebApplication.CreateBuilder(args);
-
-            builder.Configuration
-                .AddJsonFile("appsettings.json");
-
-            builder.WebHost
+// Add services to the container.
+builder.WebHost
                 .ConfigureServices(services =>
                 {
                     services.AddMassTransit(x =>
@@ -90,22 +78,20 @@ namespace Restaurant.Booking
 
                     services.AddHostedService<ClientHostedService>();
 
-                    services.AddControllers(); 
+                    services.AddControllers();
 
                 });
 
-            var app = builder.Build();
+var app = builder.Build();
 
-            app.UseRouting();
-            app.UseHttpsRedirection();
+// Configure the HTTP request pipeline.
+app.UseRouting();
+app.UseHttpsRedirection();
 
-            app.UseEndpoints(configure =>
-            {
-                configure.MapMetrics();
-                configure.MapControllers();
-            });
+app.UseEndpoints(endpoint =>
+{
+    endpoint.MapMetrics();
+    endpoint.MapControllers();
+});
 
-            app.Run();
-        }
-    }
-}
+app.Run();

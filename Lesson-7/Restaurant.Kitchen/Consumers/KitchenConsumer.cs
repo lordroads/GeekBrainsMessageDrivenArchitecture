@@ -3,6 +3,7 @@ using Messaging.Exceptions;
 using Messaging.Interfaces;
 using Messaging.Interfaces.Impl;
 using Messaging.Models.Requests;
+using Microsoft.Extensions.Logging;
 using Restaurant.Kitchen.Services;
 
 namespace Restaurant.Kitchen.Consumers
@@ -12,24 +13,29 @@ namespace Restaurant.Kitchen.Consumers
         private readonly IKitchenService _kitchenService;
         private readonly IBus _bus;
         private readonly IInMemoryRepository<KitchenRequestModel> _inMemoryRepository;
+        private readonly ILogger _logger;
 
         public KitchenConsumer(
-            IBus bus, 
-            IKitchenService kitchenService, 
-            IInMemoryRepository<KitchenRequestModel> inMemoryRepository)
+            IBus bus,
+            IKitchenService kitchenService,
+            IInMemoryRepository<KitchenRequestModel> inMemoryRepository,
+            ILogger<KitchenConsumer> logger)
         {
             _bus = bus;
             _kitchenService = kitchenService;
             _inMemoryRepository = inMemoryRepository;
+            _logger = logger;
         }
 
         public Task Consume(ConsumeContext<ITableBooked> context)
         {
-            var model = _inMemoryRepository.GetAll().FirstOrDefault(item => item.OrderId == context.Message.OrderId);
+            var model = _inMemoryRepository
+                .GetAll()
+                .FirstOrDefault(item => item.OrderId == context.Message.OrderId);
 
             if (model is not null && model.CheckMessageId(context.MessageId.ToString()))
             {
-                Console.WriteLine($"[LOGGER_INFO]: Повторное сообщение от {context.MessageId}");
+                _logger.LogInformation($"Повторное сообщение от {context.MessageId}");
                 return context.ConsumeCompleted;
             }
 
@@ -47,9 +53,14 @@ namespace Restaurant.Kitchen.Consumers
 
             if (context.Message.PreOrder is null) { throw new LasagnaException("Ошибка лазаньи!"); }
 
-            var result = _kitchenService.CheckMenu(context.Message.PreOrder, context.Message.CountOfPersons, context.Message.OrderId);
+            var result = _kitchenService.CheckMenu(
+                context.Message.PreOrder, 
+                context.Message.CountOfPersons, 
+                context.Message.OrderId);
 
-            Console.WriteLine($"Dish {context.Message.PreOrder?.Name ?? ("Лазанья")} - {context.Message.OrderId} [STATUS KITCHEN]: {result}");
+            _logger
+                .LogInformation($"Dish {context.Message.PreOrder?.Name ?? ("Лазанья")}" +
+                $" - {context.Message.OrderId} [STATUS KITCHEN]: {result}");
 
             if (result)
             {

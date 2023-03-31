@@ -1,4 +1,5 @@
 using Messaging.Models;
+using Microsoft.Extensions.Logging;
 
 namespace Restaurant.Kitchen.Services.Impl;
 
@@ -10,10 +11,12 @@ public class KitchenService : IKitchenService
     private Dictionary<Dish, OrderDish> _preOrders =
         new Dictionary<Dish, OrderDish>();
 
-    public KitchenService()
+    private readonly ILogger _logger;
+
+    public KitchenService(ILogger<KitchenService> logger)
     {
-        var _dishes = new List<Dish> 
-        { 
+        var _dishes = new List<Dish>
+        {
             new Dish
             {
                 Id= 1,
@@ -35,11 +38,14 @@ public class KitchenService : IKitchenService
         {
             _stopList.Add(item, new Random().Next(4, 8));
         }
+        _logger = logger;
     }
 
 
     public bool CheckMenu(Dish? dish, int countOfPersons, Guid clientId)
     {
+        _logger.LogDebug("Проверка стоп листа на кухне.");
+
         if (dish is null)
         {
             return false;
@@ -61,6 +67,8 @@ public class KitchenService : IKitchenService
 
     public void OrderCancallation(Guid clientId)
     {
+        _logger.LogInformation("Отмена предзаказа на кухне.");
+
         var preOrder = _preOrders.FirstOrDefault(order => order.Value.ClientId == clientId);
 
         if (preOrder.Key is not null)

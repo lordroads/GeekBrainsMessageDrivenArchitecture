@@ -2,11 +2,16 @@
 using Messaging.Interfaces;
 using Messaging.Interfaces.Impl;
 using Messaging.Models.Requests;
-using Microsoft.Extensions.DependencyInjection;
-using Microsoft.Extensions.Hosting;
 using Restaurant.Kitchen.Consumers;
 using Restaurant.Kitchen.Services;
 using Restaurant.Kitchen.Services.Impl;
+
+using Microsoft.AspNetCore.Builder;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using Prometheus;
+using MassTransit.Audit;
 
 namespace Restaurant.Kitchen;
 
@@ -14,7 +19,12 @@ internal class Program
 {
     static void Main(string[] args)
     {
-        Host.CreateDefaultBuilder(args)
+        var builder = WebApplication.CreateBuilder(args);
+
+        builder.Configuration
+            .AddJsonFile("appsettings.json");
+
+        builder.WebHost
                 .ConfigureServices(services =>
                 {
                     services.AddMassTransit(x =>
@@ -29,6 +39,11 @@ internal class Program
 
                         x.UsingRabbitMq((context, cfg) =>
                         {
+                            var auditStore = context.GetService<IMessageAuditStore>();
+                            cfg.UsePrometheusMetrics(serviceName: "kitchen_service");
+                            cfg.ConnectSendAuditObservers(auditStore);
+                            cfg.ConnectConsumeAuditObserver(auditStore);
+
                             cfg.UseDelayedMessageScheduler();
                             cfg.UseInMemoryOutbox();
                             cfg.ConfigureEndpoints(context);
@@ -56,10 +71,24 @@ internal class Program
                         opts => opts.ShutdownTimeout = TimeSpan.FromMinutes(1));
 
 
-                    services.AddSingleton<IInMemoryRepository<KitchenRequestModel>, InMemoryRepository<KitchenRequestModel>>(); 
+                    services.AddSingleton<IInMemoryRepository<KitchenRequestModel>, InMemoryRepository<KitchenRequestModel>>();
                     services.AddTransient<IKitchenService, KitchenService>();
-                })
-                .Build()
-                .Run();
+                    services.AddSingleton<IMessageAuditStore, AuditStore>();
+
+                    services.AddControllers();
+                });
+
+        var app = builder.Build();
+
+        app.UseRouting();
+        app.UseHttpsRedirection();
+
+        app.UseEndpoints(configure =>
+        {
+            configure.MapMetrics();
+            configure.MapControllers();
+        });
+
+        app.Run();
     }
 }

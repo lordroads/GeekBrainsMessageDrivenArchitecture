@@ -74,7 +74,7 @@ public sealed class RestaurantBookingSaga : MassTransitStateMachine<RestaurantBo
             })
             .Schedule(BookingExpired,
                 context => new BookingExpire(context.Instance),
-                context => TimeSpan.FromSeconds(25))
+                context => TimeSpan.FromSeconds(5))
             .TransitionTo(AwaitingBookingApproved)
             );
 

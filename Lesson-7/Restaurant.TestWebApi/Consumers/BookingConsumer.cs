@@ -33,7 +33,7 @@ public class BookingConsumer : IConsumer<IBookingRequest>
 
         if (model is not null && model.CheckMessageId(context.MessageId.ToString()))
         {
-            _logger.LogInformation($"Повторное сообщение от {context.MessageId}");
+            _logger.LogInformation($"[LOGGER_INFO]: Повторное сообщение от {context.MessageId}");
             return context.ConsumeCompleted;
         }
 
@@ -62,7 +62,7 @@ public class BookingConsumer : IConsumer<IBookingRequest>
         }
         else
         {
-            _logger.LogError($"Нет мест для - {context.Message.OrderId}");
+            _logger.LogInformation($"Нет мест для - {context.Message.OrderId}");
 
             _bus.Publish<Fault<IBookingRequest>>(
                 context,
