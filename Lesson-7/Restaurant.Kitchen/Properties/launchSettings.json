@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "Restaurant.Kitchen": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "metrics",
+      "applicationUrl": "http://localhost:6541",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Testing"
+      }
+    }
+  }
+}

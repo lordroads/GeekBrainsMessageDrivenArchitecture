@@ -1,0 +1,14 @@
+{
+  "profiles": {
+    "Restaurant.Booking": {
+      "commandName": "Project",
+      "dotnetRunMessages": true,
+      "launchBrowser": true,
+      "launchUrl": "metrics",
+      "applicationUrl": "http://localhost:6547",
+      "environmentVariables": {
+        "ASPNETCORE_ENVIRONMENT": "Testing"
+      }
+    }
+  }
+}
